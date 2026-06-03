@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HostAutomate - Airbnb Auto-Reply Bot Dashboard</title>
+    <!-- Local compiled Tailwind CSS (CDN scripts are blocked by extension CSP) -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f7f9fa;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .chat-container {
+            height: calc(100vh - 280px);
+            min-height: 480px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- Top Toast Notification System -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Main Outer Shell -->
+    <div class="flex flex-col min-h-screen">
+        
+        <!-- Premium Navigation Header -->
+        <header class="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Brand Identity -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-tr from-brand-500 to-rose-400 rounded-xl flex items-center justify-center text-white shadow-md shadow-brand-100">
+                            <i class="fa-solid fa-robot text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                                HostAutomate <span class="text-xs bg-brand-50 text-brand-600 font-semibold px-2 py-0.5 rounded-full border border-brand-100">Airbnb AI Copilot</span>
+                            </span>
+                            <p class="text-xs text-slate-400">Smart Auto-Reply & Concierge Engine</p>
+                        </div>
+                    </div>
+
+                    <!-- Environment & API Credentials Status -->
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3 py-1.5 text-xs font-semibold gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>Google Key Synchronized</span>
+                        </div>
+                        <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+                            <span class="px-2 py-1 bg-slate-100 rounded text-slate-600 font-mono">gemini-2.5-flash</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body Grid Layout -->
+        <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left Column Menu / Navigation Tabs -->
+                <aside class="lg:col-span-3 flex flex-col gap-4">
+                    
+                    <!-- Navigation panel -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col gap-1.5">
+                        <p class="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-3 mb-2">Navigation</p>
+                        
+                        <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="tab-btn flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 bg-brand-50 text-brand-600">
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-chart-line text-base"></i>
+                                <span>Host Dashboard</span>
+                            </span>
+                            <span class="text-xs bg-brand-200/40 text-brand-700 px-1.5 py-0.5 rounded-md font-bold" id="badge-total-replies">0</span>
+                        </button>
+
+                        <button onclick="switchTab('listings')" id="btn-tab-listings" class="tab-btn flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-150">
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-house-chimney text-base"></i>
+                                <span>Properties Context</span>
+                            </span>
+                            <span class="text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-md font-bold" id="badge-listings-count">1</span>
+                        </button>
+
+                        <button onclick="switchTab('rules')" id="btn-tab-rules" class="tab-btn flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-150">
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-bolt text-base"></i>
+                                <span>Auto-Reply Rules</span>
+                            </span>
+                            <span class="text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-md font-bold" id="badge-rules-count">4</span>
+                        </button>
+
+                        <button onclick="switchTab('simulator')" id="btn-tab-simulator" class="tab-btn flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-150">
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-comments text-base"></i>
+                                <span>AI Bot Playground</span>
+                            </span>
+                            <span class="w-2 h-2 rounded-full bg-brand-500 animate-ping"></span>
+                        </button>
+
+                        <button onclick="switchTab('audit-logs')" id="btn-tab-audit-logs" class="tab-btn flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all duration-150">
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-list-check text-base"></i>
+                                <span>System Activity Logs</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- NEW: Active Airbnb Live Sync & Clipboard Helper Widget -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-1">Airbnb Live Sync</p>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        </div>
+                        
+                        <div class="bg-rose-50 border border-rose-100 p-3 rounded-xl flex items-start gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center shrink-0">
+                                <i class="fa-brands fa-airbnb text-lg"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-bold text-slate-800 truncate">Thread ID: 2551990293</p>
+                                <p class="text-[10px] text-slate-500 truncate">Airbnb UK Console</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <a id="btn-open-airbnb" href="https://www.airbnb.co.uk/hosting/messages/2551990293" target="_blank" class="flex items-center justify-center gap-2 w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Airbnb Inbox
+                            </a>
+                            <button onclick="openSyncSettings()" class="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-semibold transition-all">
+                                <i class="fa-solid fa-sliders mr-1"></i> Sync & API Settings
+                            </button>
+                        </div>
+
+                        <div class="text-[10px] text-slate-400 leading-normal px-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <span class="font-bold text-slate-600">Quick-Paste Workflow:</span> Click <span class="font-semibold text-brand-600">Approve & Send</span> in the playground to copy the reply automatically. Then open your Airbnb Thread and paste (Cmd/Ctrl + V).
+                        </div>
+                    </div>
+
+                    <!-- Mini status stats widget -->
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-5 border border-slate-700/50 shadow-md flex flex-col gap-3">
+                        <div class="flex items-center gap-2.5 text-brand-200">
+                            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider">Host Status Panel</span>
+                        </div>
+                        <h4 class="text-sm font-semibold text-slate-200">Active Auto-Pilot is protecting your Response Rate rating on Airbnb.</h4>
+                        <div class="h-px bg-slate-700/60 my-1"></div>
+                        <div class="grid grid-cols-2 gap-2 text-center">
+                            <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/40">
+                                <p class="text-[10px] text-slate-400 font-medium">Response Rate</p>
+                                <p class="text-lg font-extrabold text-emerald-400">100%</p>
+                            </div>
+                            <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/40">
+                                <p class="text-[10px] text-slate-400 font-medium">Avg Speed</p>
+                                <p class="text-lg font-extrabold text-brand-300">&lt; 1 min</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Center/Right Column Area (Dynamic Views) -->
+                <main class="lg:col-span-9">
+                    
+                    <!-- TAB 1: DASHBOARD VIEW -->
+                    <div id="tab-content-dashboard" class="tab-content flex flex-col gap-6">
+                        <!-- Top Analytics Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Card 1 -->
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-medium text-slate-400">Total Auto-Replies</span>
+                                    <span class="text-3xl font-extrabold text-slate-900 mt-1" id="stat-total-replies">0</span>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
+                                    <i class="fa-solid fa-reply-all text-xl"></i>
+                                </div>
+                            </div>
+                            <!-- Card 2 -->
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-medium text-slate-400">Frictionless Matches</span>
+                                    <span class="text-3xl font-extrabold text-slate-900 mt-1" id="stat-rule-matches">0</span>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                    <i class="fa-solid fa-bolt text-xl"></i>
+                                </div>
+                            </div>
+                            <!-- Card 3 -->
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-medium text-slate-400">AI Context Elaborations</span>
+                                    <span class="text-3xl font-extrabold text-slate-900 mt-1" id="stat-ai-generations">0</span>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center text-pink-500">
+                                    <i class="fa-solid fa-brain text-xl"></i>
+                                </div>
+                            </div>
+                            <!-- Card 4 -->
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-medium text-slate-400">Estimated Hours Saved</span>
+                                    <span class="text-3xl font-extrabold text-slate-900 mt-1" id="stat-hours-saved">0.0h</span>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500">
+                                    <i class="fa-solid fa-hourglass-half text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Row: Setup Instruction Banner & Quick Start -->
+                        <div class="bg-gradient-to-r from-brand-50 to-rose-50 border border-brand-100 rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                            <div class="relative z-10 space-y-2">
+                                <span class="bg-brand-500 text-white text-[10px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider">Active Integration Pipeline</span>
+                                <h2 class="text-xl font-bold text-slate-900">Configured with your Live Messaging Thread</h2>
+                                <p class="text-sm text-slate-600 max-w-xl leading-relaxed">
+                                    Your personal Gemini API Key and Airbnb Thread ID <code class="bg-white px-1.5 py-0.5 rounded border font-mono">2551990293</code> have been successfully synced. Try drafting a simulated response, approving it, and directly posting it to your real Airbnb guest thread!
+                                </p>
+                            </div>
+                            <button onclick="switchTab('simulator')" class="relative z-10 shrink-0 bg-brand-500 hover:bg-brand-600 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow-md shadow-brand-200 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-play"></i> Start Bot Simulator
+                            </button>
+                        </div>
+
+                        <!-- Split Status Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Properties Mini Dashboard -->
+                            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-house-user text-brand-500"></i>
+                                        <h3 class="font-bold text-slate-900">Listed Context Assets</h3>
+                                    </div>
+                                    <button onclick="switchTab('listings')" class="text-xs font-bold text-brand-500 hover:underline">Manage All &rarr;</button>
+                                </div>
+                                <div id="dashboard-listings-list" class="flex flex-col gap-3">
+                                    <!-- Dynamic Listings -->
+                                </div>
+                            </div>
+
+                            <!-- Active Automation Rules Mini Panel -->
+                            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-bolt text-brand-500"></i>
+                                        <h3 class="font-bold text-slate-900">Instant Automation Rules</h3>
+                                    </div>
+                                    <button onclick="switchTab('rules')" class="text-xs font-bold text-brand-500 hover:underline">Customize Keys &rarr;</button>
+                                </div>
+                                <div id="dashboard-rules-list" class="flex flex-col gap-2">
+                                    <!-- Dynamic Rules -->
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Recent System Actions Feed -->
+                        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-timeline text-indigo-500"></i>
+                                    <span>Recent Assistant Activity</span>
+                                </h3>
+                                <button onclick="switchTab('audit-logs')" class="text-xs font-bold text-indigo-500 hover:underline">Full System Logs</button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="text-slate-400 font-medium border-b border-slate-100 pb-2">
+                                            <th class="py-2.5">Timestamp</th>
+                                            <th class="py-2.5">Property</th>
+                                            <th class="py-2.5">Guest Query Preview</th>
+                                            <th class="py-2.5 text-center">Engine Route</th>
+                                            <th class="py-2.5 text-right">Confidence Match</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboard-activity-feed" class="divide-y divide-slate-100">
+                                        <!-- Dynamic Entries loaded on bot usage -->
+                                        <tr>
+                                            <td colspan="5" class="py-8 text-center text-slate-400 text-xs">
+                                                <i class="fa-solid fa-circle-nodes block text-2xl text-slate-200 mb-2"></i>
+                                                No assistant activity captured yet. Use the Bot Playground to start simulating!
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <!-- TAB 2: LISTINGS MANAGER VIEW -->
+                    <div id="tab-content-listings" class="tab-content hidden flex flex-col gap-6">
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-extrabold text-slate-900">Properties Context Database</h2>
+                                <p class="text-sm text-slate-400">Configure real-world data assets of your listings. The AI reads this database to guarantee accurate guest advice.</p>
+                            </div>
+                            <button onclick="openListingModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-plus text-xs"></i> New Property
+                            </button>
+                        </div>
+
+                        <!-- Listing Cards Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="listings-grid">
+                            <!-- Populated dynamically via state -->
+                        </div>
+
+                    </div>
+
+
+                    <!-- TAB 3: AUTO-REPLY RULES VIEW -->
+                    <div id="tab-content-rules" class="tab-content hidden flex flex-col gap-6">
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-extrabold text-slate-900">Immediate Auto-Reply Rules</h2>
+                                <p class="text-sm text-slate-400">Trigger standard message templates immediately when matched keywords are discovered in guest communications.</p>
+                            </div>
+                            <button onclick="openRuleModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-plus text-xs"></i> New Rule
+                            </button>
+                        </div>
+
+                        <!-- Informative Box -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex gap-3 text-xs text-slate-600">
+                            <i class="fa-solid fa-circle-info text-slate-500 mt-0.5 text-sm"></i>
+                            <div>
+                                <span class="font-bold block text-slate-800 mb-1">How Custom Triggers & Dynamic Templates work:</span>
+                                When a guest's query contains a target matching keyword (case-insensitive), HostAutomate skips calling the LLM to save money/tokens, instantly filling and transmitting your saved template. You can use global template variables like:
+                                <code class="bg-slate-200/70 px-1 rounded text-slate-800 font-bold mx-0.5">{guest_name}</code>,
+                                <code class="bg-slate-200/70 px-1 rounded text-slate-800 font-bold mx-0.5">{wifi_name}</code>,
+                                <code class="bg-slate-200/70 px-1 rounded text-slate-800 font-bold mx-0.5">{wifi_pass}</code>,
+                                <code class="bg-slate-200/70 px-1 rounded text-slate-800 font-bold mx-0.5">{access_instructions}</code>.
+                            </div>
+                        </div>
+
+                        <!-- Rules Grid -->
+                        <div class="grid grid-cols-1 gap-4" id="rules-list-container">
+                            <!-- Generated dynamically via state -->
+                        </div>
+
+                    </div>
+
+
+                    <!-- TAB 4: BOT SIMULATOR / PLAYGROUND VIEW -->
+                    <div id="tab-content-simulator" class="tab-content hidden flex flex-col gap-6">
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            
+                            <!-- Left: Simulation Control Configuration Pane -->
+                            <div class="lg:col-span-5 flex flex-col gap-5">
+                                
+                                <div class="bg-white border border-slate-200/80 shadow-sm rounded-2xl p-5 flex flex-col gap-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-lg bg-brand-50 flex items-center justify-center text-brand-500">
+                                            <i class="fa-solid fa-sliders text-xs"></i>
+                                        </span>
+                                        <h3 class="font-bold text-slate-900">1. Setup Simulation Scenario</h3>
+                                    </div>
+
+                                    <!-- Selected property context target -->
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Target Property</label>
+                                        <select id="sim-property-select" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl px-3 py-2.5 font-medium focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                            <!-- Dynamic options -->
+                                        </select>
+                                    </div>
+
+                                    <!-- Guest Persona Profile Selector -->
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Guest Persona & Query Preset</label>
+                                        <select id="sim-scenario-select" onchange="applyScenarioPreset()" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl px-3 py-2.5 font-medium focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                            <option value="wifi">📶 Michael: Asking for Wi-Fi Network credentials</option>
+                                            <option value="checkin">🔑 Sarah: Unsure of check-in time and access keycodes</option>
+                                            <option value="towels">🧼 David: Requesting extra towels / supplies location</option>
+                                            <option value="checkout">⏰ Jessica: Asking for early check-in or late check-out options</option>
+                                            <option value="noise_complaint">⚠️ Neighbour Alert: Loud party reported (Edge Case)</option>
+                                            <option value="custom">✍️ Custom Prompt Mode (Type Your Own)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Guest Custom Information Metadata -->
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="space-y-1">
+                                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Guest Name</label>
+                                            <input type="text" id="sim-guest-name" value="Michael" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none font-medium">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Check-in Status</label>
+                                            <select id="sim-guest-status" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none font-medium">
+                                                <option value="Arriving Today">Arriving Today</option>
+                                                <option value="Currently In House">Currently In House</option>
+                                                <option value="Checked Out">Checked Out</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Core Message Area -->
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Incoming Guest Message</label>
+                                        <textarea id="sim-guest-message" rows="4" class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl p-3 focus:ring-1 focus:ring-brand-500 focus:outline-none font-medium leading-relaxed" placeholder="Type what your guest is texting you..."></textarea>
+                                    </div>
+
+                                    <!-- Trigger Action Buttons -->
+                                    <div class="flex gap-2 pt-2">
+                                        <button onclick="triggerAutoReplySimulation()" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md shadow-brand-100 flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-play"></i> Process Message
+                                        </button>
+                                        <button onclick="clearChatSimulator()" title="Reset Chat Simulator" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 rounded-xl text-sm transition-all flex items-center justify-center">
+                                            <i class="fa-solid fa-rotate-left"></i>
+                                        </button>
+                                    </div>
+
+                                </div>
+
+                                <!-- Live Engine Logic Tracker Visualizer -->
+                                <div class="bg-slate-900 text-slate-300 rounded-2xl p-5 border border-slate-800 shadow-md">
+                                    <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2.5">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                                            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Engine Process Pipeline</span>
+                                        </div>
+                                        <span class="text-[10px] text-slate-500 font-mono" id="pipeline-status-badge">Awaiting Query</span>
+                                    </div>
+                                    <div class="space-y-4 text-xs">
+                                        <!-- Step 1 -->
+                                        <div class="flex gap-3">
+                                            <div class="flex flex-col items-center">
+                                                <div id="step-1-dot" class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 transition-colors">1</div>
+                                                <div class="w-0.5 h-6 bg-slate-800"></div>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-slate-200">Parse Intent Keywords</p>
+                                                <p class="text-[10px] text-slate-500" id="step-1-details">Scans guest text for matching trigger keys.</p>
+                                            </div>
+                                        </div>
+                                        <!-- Step 2 -->
+                                        <div class="flex gap-3">
+                                            <div class="flex flex-col items-center">
+                                                <div id="step-2-dot" class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 transition-colors">2</div>
+                                                <div class="w-0.5 h-6 bg-slate-800"></div>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-slate-200">Assemble System Context</p>
+                                                <p class="text-[10px] text-slate-500" id="step-2-details">Prepares context for the target property profile.</p>
+                                            </div>
+                                        </div>
+                                        <!-- Step 3 -->
+                                        <div class="flex gap-3">
+                                            <div class="flex flex-col items-center">
+                                                <div id="step-3-dot" class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 transition-colors">3</div>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-slate-200">Formulate AI Response Draft</p>
+                                                <p class="text-[10px] text-slate-500" id="step-3-details">Invokes Gemini model or compiles trigger rule output.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Right: Simulated Messaging Device Interface -->
+                            <div class="lg:col-span-7 flex flex-col">
+                                <div class="bg-white border border-slate-200/80 shadow-sm rounded-3xl overflow-hidden flex flex-col h-full">
+                                    
+                                    <!-- Phone Header Banner -->
+                                    <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="relative">
+                                                <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold text-sm" id="sim-avatar-letter">M</div>
+                                                <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                                    <span id="sim-header-name">Michael</span>
+                                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full" id="sim-header-status">Arriving Today</span>
+                                                </div>
+                                                <p class="text-xs text-slate-400" id="sim-header-property">Downtown Premium Loft</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[11px] font-bold tracking-wider text-brand-500 bg-brand-50 border border-brand-100 px-2 py-1 rounded-lg">LIVE SIMULATOR</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Chat Conversation Window Content Area -->
+                                    <div id="sim-chat-box" class="chat-container p-5 overflow-y-auto bg-slate-50 flex flex-col gap-4">
+                                        <!-- Welcome Simulated Message System Info -->
+                                        <div class="self-center bg-slate-200/60 text-[11px] text-slate-600 px-3 py-1.5 rounded-full text-center max-w-sm">
+                                            Host Chat channel established. Choose an incoming query model on the left to simulate automated co-hosting.
+                                        </div>
+                                        
+                                        <!-- Guest Message bubble -->
+                                        <!-- Bot reply bubble -->
+                                    </div>
+
+                                    <!-- Bottom Assistant Draft Interception Dashboard -->
+                                    <div class="border-t border-slate-200 p-4 bg-white flex flex-col gap-3">
+                                        <div class="flex items-center justify-between text-xs">
+                                            <div class="flex items-center gap-1.5 text-slate-400">
+                                                <i class="fa-solid fa-robot"></i>
+                                                <span>Assistant Draft Draft Box (Intercept Mode)</span>
+                                            </div>
+                                            <span id="draft-char-count" class="text-slate-400 font-mono">0 chars</span>
+                                        </div>
+                                        
+                                        <textarea id="assistant-draft-textarea" rows="3" class="w-full bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 text-sm rounded-xl p-3 leading-relaxed font-medium" placeholder="Auto-reply generation will populate here for preview/refinements..."></textarea>
+                                        
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="inline-flex items-center text-xs text-slate-500 gap-1.5">
+                                                    <i class="fa-solid fa-code-compare text-indigo-500"></i>
+                                                    <span id="trigger-badge">Trigger: None</span>
+                                                </span>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button onclick="approveAndSendAutoReply()" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2 shadow-sm shadow-brand-100">
+                                                    <i class="fa-solid fa-paper-plane"></i> Approve & Copy Reply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- TAB 5: SYSTEM AUDIT & ACTIVITY LOGS -->
+                    <div id="tab-content-audit-logs" class="tab-content hidden flex flex-col gap-6">
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-extrabold text-slate-900">System Activity Logs</h2>
+                                <p class="text-sm text-slate-400">Chronological telemetry audit logs tracing keyword match filters, custom rule routing, and direct Gemini generative events.</p>
+                            </div>
+                            <button onclick="clearAuditLogs()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-trash-can"></i> Clear Logs
+                            </button>
+                        </div>
+
+                        <!-- System Logs Output -->
+                        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                                            <th class="p-4">Time</th>
+                                            <th class="p-4">Listing Target</th>
+                                            <th class="p-4">Trigger Engine</th>
+                                            <th class="p-4">Prompt Context Sample</th>
+                                            <th class="p-4 text-right">Result Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="audit-logs-table-body" class="divide-y divide-slate-100 font-mono text-xs">
+                                        <!-- Dynamic rows -->
+                                        <tr>
+                                            <td colspan="5" class="p-8 text-center text-slate-400 font-sans">
+                                                <i class="fa-solid fa-hard-drive block text-3xl text-slate-200 mb-2"></i>
+                                                No logs recorded. Engage the chat simulator to watch automated workflows execute in real-time.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </main>
+
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-slate-400 text-xs">
+            <p>&copy; 2026 HostAutomate System. Powered by standard Gemini 2.5 generative intelligence. Secure and private co-host architecture.</p>
+        </footer>
+
+    </div>
+
+    <!-- MODAL 1: ADD / EDIT LISTING -->
+    <div id="listing-modal" class="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden flex flex-col transform transition-all">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-slate-900" id="listing-modal-title">Create Property Context Profile</h3>
+                <button onclick="closeListingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="listing-form" onsubmit="saveListing(event)" class="p-6 flex flex-col gap-4 overflow-y-auto max-h-[75vh]">
+                <input type="hidden" id="listing-edit-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2 space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Property Name</label>
+                        <input type="text" id="list-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="Downtown Luxury Penthouse">
+                    </div>
+                    <div class="col-span-2 space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Address / Access Directions</label>
+                        <input type="text" id="list-address" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="123 Luxury Ave, Suite 40B, Metropolis">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Wi-Fi Name (SSID)</label>
+                        <input type="text" id="list-wifi-ssid" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="Penthouse_Guest_5G">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Wi-Fi Password</label>
+                        <input type="text" id="list-wifi-pass" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="stayluxurious2026">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Check-in Time</label>
+                        <input type="text" id="list-checkin" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="3:00 PM onwards">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Check-out Time</label>
+                        <input type="text" id="list-checkout" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="11:00 AM">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Smart Lock Code & Check-in Instructions</label>
+                    <textarea id="list-instructions" required rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="Digital keypad is on the front door. Code: 4820# (triggers automatically upon day of arrival check-in)."></textarea>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Parking Details & Location</label>
+                    <input type="text" id="list-parking" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="Assigned subterranean bay #12 with complimentary pass inside.">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Custom Rules & Supplies Location (e.g. towels, trash, heating)</label>
+                    <textarea id="list-rules" required rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="Extra linens and towels are kept inside the hallway closet on shelves 2 and 3. Trash collection is at the end of the parking ramp near block B. Strictly no parties. Quiet hours start at 10 PM."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeListingModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-sm transition-all">Cancel</button>
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all">Save Context</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- MODAL 2: ADD / EDIT RULE -->
+    <div id="rule-modal" class="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xl rounded-3xl shadow-xl overflow-hidden flex flex-col transform transition-all">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-slate-900" id="rule-modal-title">Create Keyword Trigger Rule</h3>
+                <button onclick="closeRuleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="rule-form" onsubmit="saveRule(event)" class="p-6 flex flex-col gap-4">
+                <input type="hidden" id="rule-edit-id">
+                
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Trigger Name / Intent Context</label>
+                    <input type="text" id="rule-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="Wi-Fi Password Request">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Keywords (Comma separated, case-insensitive)</label>
+                    <input type="text" id="rule-keywords" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium" placeholder="wifi, wi-fi, internet, ssid, password">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Template Automated Reply</label>
+                    <textarea id="rule-template" required rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-medium leading-relaxed" placeholder="Hi {guest_name}! Here are the Wi-Fi credentials for your stay: SSID: {wifi_name} | Password: {wifi_pass}"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeRuleModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-sm transition-all">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all">Save Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- MODAL 3: INTEGRATION & SYNC SETTINGS -->
+    <div id="sync-settings-modal" class="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xl rounded-3xl shadow-xl overflow-hidden flex flex-col transform transition-all">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-slate-900"><i class="fa-solid fa-gears text-brand-500 mr-1.5"></i>Sync & API Integration Settings</h3>
+                <button onclick="closeSyncSettings()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form onsubmit="saveSyncSettings(event)" class="p-6 flex flex-col gap-4">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Gemini API Key</label>
+                    <input type="text" id="sync-api-key" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-mono" placeholder="AI.xxxxxx">
+                    <p class="text-[10px] text-slate-400">Your Google API key is configured and saved locally in state.</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Airbnb Messaging Thread URL</label>
+                    <input type="url" id="sync-airbnb-url" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm font-mono" placeholder="https://www.airbnb.co.uk/hosting/messages/xxxxxx">
+                    <p class="text-[10px] text-slate-400">Pressing 'Open Airbnb Inbox' inside the dashboard triggers this URL.</p>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeSyncSettings()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-sm transition-all">Cancel</button>
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all">Save Credentials</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN CORE APPLICATION JAVASCRIPT LOGIC -->
+    <script src="app.js"></script>
+
+</body>
+</html>
