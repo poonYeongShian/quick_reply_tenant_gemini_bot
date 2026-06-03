@@ -234,6 +234,36 @@ Draft the perfect co-host reply now, in the guest's own language.`;
         }
     }
 
+    async function rephrase() {
+        const stored = await getStored();
+        const cfg = stored.userConfig || {};
+        const apiKey = cfg.apiToken;
+        if (!apiKey) {
+            setStatus("No Gemini API key. Set it in the dashboard → Sync & API Settings.", "warn");
+            return;
+        }
+        const currentDraft = draftInput.value.trim();
+        if (!currentDraft) {
+            setStatus("Nothing to rephrase — write or generate a draft first.", "warn");
+            return;
+        }
+        const prompt = `You are a professional writing assistant. Improve and rephrase the following Airbnb host reply. Fix any grammar or spelling mistakes, make it sound warmer and more professional, and keep the same language and meaning. Do NOT add preamble like "Here is the improved version:" — output only the improved message directly.\n\nOriginal message:\n"${currentDraft}"`;
+
+        setStatus("Improving your reply…", "busy");
+        chrome.runtime.sendMessage({ type: "GEMINI_GENERATE", apiKey, prompt }, resp => {
+            if (chrome.runtime.lastError) {
+                setStatus("Error: " + chrome.runtime.lastError.message, "warn");
+                return;
+            }
+            if (resp && resp.ok) {
+                draftInput.value = resp.text;
+                setStatus("Rephrased ✓ — review the improved version.", "ok");
+            } else {
+                setStatus("Failed: " + ((resp && resp.error) || "unknown error"), "warn");
+            }
+        });
+    }
+
     async function generate() {
         const stored = await getStored();
         const cfg = stored.userConfig || {};
@@ -295,6 +325,8 @@ Draft the perfect co-host reply now, in the guest's own language.`;
                 <label class="ha-label">Suggested reply</label>
                 <textarea class="ha-ta ha-draft" rows="6" placeholder="The AI draft appears here…"></textarea>
 
+                <button class="ha-btn ha-ghost ha-rephrase">🔄 Improve & Rephrase</button>
+
                 <div class="ha-actions">
                     <button class="ha-btn ha-insert">⤵ Insert into Airbnb box</button>
                     <button class="ha-btn ha-ghost ha-copy">⧉ Copy</button>
@@ -326,6 +358,7 @@ Draft the perfect co-host reply now, in the guest's own language.`;
         panelEl.querySelector(".ha-x").addEventListener("click", close);
         panelEl.querySelector(".ha-sync").addEventListener("click", () => syncLatest(true));
         panelEl.querySelector(".ha-generate").addEventListener("click", generate);
+        panelEl.querySelector(".ha-rephrase").addEventListener("click", rephrase);
         panelEl.querySelector(".ha-insert").addEventListener("click", () => {
             if (!draftInput.value.trim()) { setStatus("Nothing to insert yet.", "warn"); return; }
             insertIntoComposer(draftInput.value)
